@@ -1,4 +1,4 @@
--- RAMA HUB LITE V7.5
+-- RAMA HUB LITE V7.6
 wait(3)
 local lp = game.Players.LocalPlayer
 local uis = game:GetService("UserInputService")
@@ -28,33 +28,16 @@ local function update(input)
 	local delta = input.Position - dragStart
 	r.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 end
-
 r.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragging = true
-		dragStart = input.Position
-		startPos = r.Position
-		input.Changed:Connect(function()
-			if input.UserInputState == Enum.UserInputState.End then
-				dragging = false
-			end
-		end)
+		dragging = true dragStart = input.Position startPos = r.Position
+		input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end)
 	end
 end)
+r.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then dragInput = input end)
+uis.InputChanged:Connect(function(input) if input == dragInput and dragging then update(input) end)
 
-r.InputChanged:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragInput = input
-	end
-end)
-
-uis.InputChanged:Connect(function(input)
-	if input == dragInput and dragging then
-		update(input)
-	end
-end)
-
--- FRAME DIBESARIN JADI 5 TOMBOL
+-- FRAME
 local f = Instance.new("Frame", gui)
 f.Size = UDim2.new(0,210,0,260)
 f.Position = UDim2.new(0,80,0,100)
@@ -89,36 +72,21 @@ btnESP.MouseButton1Click:Connect(function()
     _G.esp = not _G.esp
     btnESP.Text = "ESP All: "..(_G.esp and "ON" or "OFF")
     btnESP.BackgroundColor3 = _G.esp and Color3.fromRGB(0,170,0) or Color3.fromRGB(40,40,40)
-    
     local function addESP(plr)
         if plr.Character and not plr.Character:FindFirstChild("ESP") then
             local hl = Instance.new("Highlight", plr.Character)
-            hl.Name = "ESP"
-            hl.FillColor = Color3.fromRGB(0,255,255)
-            hl.OutlineColor = Color3.new(1,1,1)
-            hl.FillTransparency = 0.5
+            hl.Name = "ESP" hl.FillColor = Color3.fromRGB(0,255,255) hl.OutlineColor = Color3.new(1,1,1) hl.FillTransparency = 0.5
         end
     end
-    
     local function removeESP(plr)
-        if plr.Character and plr.Character:FindFirstChild("ESP") then 
-            plr.Character.ESP:Destroy() 
-        end
+        if plr.Character and plr.Character:FindFirstChild("ESP") then plr.Character.ESP:Destroy() end
     end
-    
     for _,v in pairs(Players:GetPlayers()) do
         if _G.esp then addESP(v) else removeESP(v) end
-        v.CharacterAdded:Connect(function()
-            wait(1)
-            if _G.esp then addESP(v) end
-        end)
+        v.CharacterAdded:Connect(function() wait(1) if _G.esp then addESP(v) end)
     end
-    
     Players.PlayerAdded:Connect(function(plr)
-        plr.CharacterAdded:Connect(function()
-            wait(1)
-            if _G.esp then addESP(plr) end
-        end)
+        plr.CharacterAdded:Connect(function() wait(1) if _G.esp then addESP(plr) end end)
     end)
 end)
 
@@ -143,22 +111,33 @@ uis.JumpRequest:Connect(function()
     end
 end)
 
--- 4. WALK ON WATER
-local waterPart
+-- 4. WALK ON WATER - FIX
+local waterPlatform
 local btnWater = newBtn("Water Walk")
 btnWater.MouseButton1Click:Connect(function()
     _G.waterWalk = not _G.waterWalk
     btnWater.Text = "Water Walk: "..(_G.waterWalk and "ON" or "OFF")
     btnWater.BackgroundColor3 = _G.waterWalk and Color3.fromRGB(0,170,0) or Color3.fromRGB(40,40,40)
+    
     if _G.waterWalk then
-        waterPart = Instance.new("Part", workspace)
-        waterPart.Anchored = true 
-        waterPart.CanCollide = true 
-        waterPart.Transparency = 1
-        waterPart.Size = Vector3.new(1000,1,1000) 
-        waterPart.Position = Vector3.new(0,-5,0)
+        waterPlatform = Instance.new("Part")
+        waterPlatform.Name = "WaterPlatform"
+        waterPlatform.Anchored = true 
+        waterPlatform.CanCollide = true 
+        waterPlatform.Transparency = 1
+        waterPlatform.Size = Vector3.new(6,1,6)
+        waterPlatform.Parent = workspace
     else
-        if waterPart then waterPart:Destroy() end
+        if waterPlatform then waterPlatform:Destroy() waterPlatform = nil end
+    end
+end)
+
+RunService.Heartbeat:Connect(function()
+    if _G.waterWalk and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = lp.Character.HumanoidRootPart
+        local pos = hrp.Position
+        -- bikin pijakan 3 stud di bawah kaki
+        waterPlatform.CFrame = CFrame.new(pos.X, pos.Y - 3, pos.Z)
     end
 end)
 
@@ -178,17 +157,10 @@ end)
 RunService.Stepped:Connect(function()
     if _G.noclip and lp.Character then
         for _, part in pairs(lp.Character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false
-            end
+            if part:IsA("BasePart") then part.CanCollide = false end
         end
     end
 end)
 
-r.MouseButton1Click:Connect(function()
-    if not dragging then
-        f.Visible = not f.Visible
-    end
-end)
-
-game.StarterGui:SetCore("SendNotification",{Title="RAMA LITE V7.5";Text="5 Fitur Loaded";Duration=5})
+r.MouseButton1Click:Connect(function() if not dragging then f.Visible = not f.Visible end)
+game.StarterGui:SetCore("SendNotification",{Title="RAMA LITE V7.6";Text="Water Walk Fixed";Duration=5})
