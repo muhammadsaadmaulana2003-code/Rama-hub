@@ -1,4 +1,4 @@
--- RAMA HUB LITE V8.2 SCROLL
+-- RAMA HUB LITE V8.3 FINAL
 wait(3)
 local lp = game.Players.LocalPlayer
 local uis = game:GetService("UserInputService")
@@ -10,7 +10,7 @@ local gui = Instance.new("ScreenGui", lp.PlayerGui)
 gui.Name = "RamaLite"
 gui.ResetOnSpawn = false
 
--- TOMBOL R YANG BISA DI DRAG
+-- TOMBOL R
 local r = Instance.new("TextButton", gui)
 r.Size = UDim2.new(0,50,0,50)
 r.Position = UDim2.new(0,20,0,100)
@@ -22,22 +22,21 @@ r.BackgroundColor3 = Color3.fromRGB(0,170,255)
 r.Active = true
 Instance.new("UICorner",r).CornerRadius = UDim.new(1,0)
 
--- FUNGSI DRAG
+-- DRAG
 local dragging, dragInput, dragStart, startPos
-local function update(input)
-	local delta = input.Position - dragStart
-	r.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-end
 r.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
 		dragging = true dragStart = input.Position startPos = r.Position
-		input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end)
+		input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
 	end
 end)
 r.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then dragInput = input end)
-uis.InputChanged:Connect(function(input) if input == dragInput and dragging then update(input) end)
+uis.InputChanged:Connect(function(input) if input == dragInput and dragging then 
+	local delta = input.Position - dragStart
+	r.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end end)
 
--- FRAME KECIL + SCROLLING
+-- FRAME SCROLL
 local f = Instance.new("ScrollingFrame", gui)
 f.Size = UDim2.new(0,210,0,160)
 f.Position = UDim2.new(0,80,0,100)
@@ -70,7 +69,7 @@ _G.infJump = false
 _G.waterWalk = false
 _G.clickTP = false
 
--- 1. ESP 1 HIGHLIGHT BIASA
+-- 1. ESP 1 BIASA
 local btnESP1 = newBtn("ESP 1")
 btnESP1.MouseButton1Click:Connect(function()
     _G.esp1 = not _G.esp1
@@ -78,39 +77,27 @@ btnESP1.MouseButton1Click:Connect(function()
     btnESP1.BackgroundColor3 = _G.esp1 and Color3.fromRGB(0,170,0) or Color3.fromRGB(40,40,40)
 end)
 
--- 2. ESP 2 HIGHLIGHT ANTI HAPUS
-RunService.RenderStepped:Connect(function()
-    -- ESP 1
-    if _G.esp1 then
-        for _,plr in pairs(Players:GetPlayers()) do
-            if plr ~= lp and plr.Character and not plr.Character:FindFirstChild("ESP1") then
-                local hl = Instance.new("Highlight") hl.Name = "ESP1"
-                hl.FillColor = Color3.fromRGB(0,255,255) hl.OutlineColor = Color3.new(1,1,1) hl.FillTransparency = 0.5
-                hl.Adornee = plr.Character hl.Parent = plr.Character
+-- 2. ESP 2 FORCE UPDATE - MODEL SAMA
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        if _G.esp2 then
+            for _,plr in pairs(Players:GetPlayers()) do
+                if plr ~= lp and plr.Character then
+                    if plr.Character:FindFirstChild("ESP2") then plr.Character.ESP2:Destroy() end
+                    local hl = Instance.new("Highlight")
+                    hl.Name = "ESP2"
+                    hl.FillColor = Color3.fromRGB(0,255,255)
+                    hl.OutlineColor = Color3.new(1,1,1)
+                    hl.FillTransparency = 0.5
+                    hl.Adornee = plr.Character
+                    hl.Parent = plr.Character
+                end
             end
-        end
-    else
-        for _,plr in pairs(Players:GetPlayers()) do
-            if plr.Character and plr.Character:FindFirstChild("ESP1") then plr.Character.ESP1:Destroy() end
-        end
-    end
-    
-    -- ESP 2 - MODEL SAMA TAPI DI PARENT KE COREGUI BIAR TEMBUS MAP
-    if _G.esp2 then
-        for _,plr in pairs(Players:GetPlayers()) do
-            if plr ~= lp and plr.Character and not plr.Character:FindFirstChild("ESP2") then
-                local hl = Instance.new("Highlight") hl.Name = "ESP2"
-                hl.FillColor = Color3.fromRGB(0,255,255) hl.OutlineColor = Color3.new(1,1,1) hl.FillTransparency = 0.5
-                hl.Adornee = plr.Character hl.Parent = game.CoreGui -- INI KUNCINYA BIAR TEMBUS
+        else
+            for _,plr in pairs(Players:GetPlayers()) do
+                if plr.Character and plr.Character:FindFirstChild("ESP2") then plr.Character.ESP2:Destroy() end
             end
-        end
-        -- Update adornee kalau respawn
-        for _,hl in pairs(game.CoreGui:GetChildren()) do
-            if hl.Name == "ESP2" and hl.Adornee and not hl.Adornee.Parent then hl:Destroy() end
-        end
-    else
-        for _,hl in pairs(game.CoreGui:GetChildren()) do
-            if hl.Name == "ESP2" then hl:Destroy() end
         end
     end
 end)
@@ -137,7 +124,7 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- 4. INFINITE JUMP
+-- 4. INF JUMP
 local btnInfJump = newBtn("Inf Jump")
 btnInfJump.MouseButton1Click:Connect(function()
     _G.infJump = not _G.infJump
@@ -150,7 +137,7 @@ uis.JumpRequest:Connect(function()
     end
 end)
 
--- 5. WALK ON WATER
+-- 5. WATER WALK
 local waterPart
 local btnWater = newBtn("Water Walk")
 btnWater.MouseButton1Click:Connect(function()
@@ -166,7 +153,7 @@ btnWater.MouseButton1Click:Connect(function()
     end
 end)
 
--- 6. CLICK TELEPORT
+-- 6. CLICK TP
 local btnTP = newBtn("Click TP")
 btnTP.MouseButton1Click:Connect(function()
     _G.clickTP = not _G.clickTP
@@ -179,5 +166,5 @@ mouse.Button1Down:Connect(function()
     end
 end)
 
-r.MouseButton1Click:Connect(function() if not dragging then f.Visible = not f.Visible end end)
-game.StarterGui:SetCore("SendNotification",{Title="RAMA LITE V8.2";Text="HAPPY CUY";Duration=5})
+r.MouseButton1Click:Connect(function() if not dragging then f.Visible = not f.Visible end)
+game.StarterGui:SetCore("SendNotification",{Title="RAMA LITE V8.3";Text="Loaded Sukses";Duration=5})
