@@ -1,7 +1,8 @@
--- RAMA HUB LITE V6
+-- RAMA HUB LITE V1
 wait(3)
 local lp = game.Players.LocalPlayer
 local uis = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
 local gui = Instance.new("ScreenGui", lp.PlayerGui)
 gui.Name = "RamaLite"
@@ -16,7 +17,7 @@ r.TextScaled = true
 r.Font = Enum.Font.GothamBlack
 r.TextColor3 = Color3.new(1,1,1)
 r.BackgroundColor3 = Color3.fromRGB(0,170,255)
-r.Active = true -- PENTING BIAR BISA DI DRAG
+r.Active = true
 Instance.new("UICorner",r).CornerRadius = UDim.new(1,0)
 
 -- FUNGSI DRAG
@@ -31,7 +32,6 @@ r.InputBegan:Connect(function(input)
 		dragging = true
 		dragStart = input.Position
 		startPos = r.Position
-		
 		input.Changed:Connect(function()
 			if input.UserInputState == Enum.UserInputState.End then
 				dragging = false
@@ -52,9 +52,9 @@ uis.InputChanged:Connect(function(input)
 	end
 end)
 
--- FRAME
+-- FRAME DIKECILIN KARENA CUMA 2 FITUR
 local f = Instance.new("Frame", gui)
-f.Size = UDim2.new(0,210,0,170)
+f.Size = UDim2.new(0,210,0,110)
 f.Position = UDim2.new(0,80,0,100)
 f.BackgroundColor3 = Color3.fromRGB(25,25,25)
 f.Visible = false
@@ -75,75 +75,70 @@ local function newBtn(text)
 end
 
 -- VARIABEL
-_G.speed = false
-_G.fly = false
 _G.esp = false
-local speedVal = 50
-local hum
+_G.noclip = false
 
--- 1. SPEED HACK
-local btnSpeed = newBtn("Speed Hack")
-btnSpeed.MouseButton1Click:Connect(function()
-    _G.speed = not _G.speed
-    btnSpeed.Text = "Speed Hack: "..(_G.speed and "ON" or "OFF")
-    btnSpeed.BackgroundColor3 = _G.speed and Color3.fromRGB(0,170,0) or Color3.fromRGB(40,40,40)
-end)
-
--- 2. FLY ON/OFF
-local btnFly = newBtn("Fly")
-btnFly.MouseButton1Click:Connect(function()
-    _G.fly = not _G.fly
-    btnFly.Text = "Fly: "..(_G.fly and "ON" or "OFF")
-    btnFly.BackgroundColor3 = _G.fly and Color3.fromRGB(0,170,0) or Color3.fromRGB(40,40,40)
-    
-    if _G.fly then
-        btnFly.Text = "Fly: LOADING..."
-        loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-goktug110gx-fly-gui-236664"))()
-        wait(0.5)
-        btnFly.Text = "Fly: ON"
-    else
-        for _,v in pairs(lp.PlayerGui:GetChildren()) do
-            if v.Name:find("Fly") or v.Name:find("fly") then
-                v:Destroy()
-            end
-        end
-    end
-end)
-
--- 3. ESP SEMUA
+-- 1. ESP SEMUA PLAYER
 local btnESP = newBtn("ESP All")
 btnESP.MouseButton1Click:Connect(function()
     _G.esp = not _G.esp
     btnESP.Text = "ESP All: "..(_G.esp and "ON" or "OFF")
     btnESP.BackgroundColor3 = _G.esp and Color3.fromRGB(0,170,0) or Color3.fromRGB(40,40,40)
     
+    local function addESP(plr)
+        if plr.Character and not plr.Character:FindFirstChild("ESP") then
+            local hl = Instance.new("Highlight", plr.Character)
+            hl.Name = "ESP"
+            hl.FillColor = Color3.fromRGB(0,255,255)
+            hl.OutlineColor = Color3.new(1,1,1)
+            hl.FillTransparency = 0.5
+        end
+    end
+    
+    local function removeESP(plr)
+        if plr.Character and plr.Character:FindFirstChild("ESP") then 
+            plr.Character.ESP:Destroy() 
+        end
+    end
+    
     for _,v in pairs(game.Players:GetPlayers()) do
-        if v.Character then
-            if _G.esp then
-                if not v.Character:FindFirstChild("ESP") then
-                    local hl = Instance.new("Highlight", v.Character)
-                    hl.Name = "ESP"
-                    hl.FillColor = Color3.fromRGB(0,255,255)
-                    hl.OutlineColor = Color3.new(1,1,1)
-                end
-            else
-                if v.Character:FindFirstChild("ESP") then v.Character.ESP:Destroy() end
+        if _G.esp then addESP(v) else removeESP(v) end
+        v.CharacterAdded:Connect(function()
+            wait(1)
+            if _G.esp then addESP(v) end
+        end)
+    end
+    
+    game.Players.PlayerAdded:Connect(function(plr)
+        plr.CharacterAdded:Connect(function()
+            wait(1)
+            if _G.esp then addESP(plr) end
+        end)
+    end)
+end)
+
+-- 2. NOCLIP ON/OFF
+local btnNoclip = newBtn("Noclip")
+btnNoclip.MouseButton1Click:Connect(function()
+    _G.noclip = not _G.noclip
+    btnNoclip.Text = "Noclip: "..(_G.noclip and "ON" or "OFF")
+    btnNoclip.BackgroundColor3 = _G.noclip and Color3.fromRGB(0,170,0) or Color3.fromRGB(40,40,40)
+end)
+
+RunService.Stepped:Connect(function()
+    if _G.noclip and lp.Character then
+        for _, part in pairs(lp.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
             end
         end
     end
 end)
 
--- KONTROL SPEED
-game:GetService("RunService").RenderStepped:Connect(function()
-    hum = lp.Character and lp.Character:FindFirstChild("Humanoid")
-    if _G.speed and hum then hum.WalkSpeed = speedVal end
-    if not _G.speed and hum then hum.WalkSpeed = 16 end
-end)
-
 r.MouseButton1Click:Connect(function()
-    if not dragging then -- biar pas di drag ga kebuka
+    if not dragging then
         f.Visible = not f.Visible
     end
 end)
 
-game.StarterGui:SetCore("SendNotification",{Title="RAMA LITE V6";Text="hapoy cuy";Duration=10})
+game.StarterGui:SetCore("SendNotification",{Title="RAMA LITE V1 HAPPY CUY";Text="ESP + Noclip Loaded";Duration=5})
